@@ -370,7 +370,7 @@ new_trigger_withdraw_think()
 
             player thread player_withdraw_fee();
 
-            if ( player.account_value < level.bank_account_increment )
+            if ( player.account_value < level.WithdrawAmount )
                 self sethintstring( "" );
         }
         else
