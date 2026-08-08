@@ -79,11 +79,11 @@ new_bank_teller_init()
 		{
 			if (level.script == "zm_transit")
 			{ 
-				level.bank_teller_transfer_trig sethintstring("Cost:" + level.TranzitTellerCost + " Points ", "[Teller Fee:" + level.TranzitTellerFee + "]" + " [Transfer Amount:" + level.TranzitBankTransferValue + "]" );
+				level.bank_teller_transfer_trig sethintstring("Hold ^3F^7 to add " + level.TranzitTellerCost, " [Cost:" + level.TranzitTellerFee + "]" + " [Transfer Amount:" + level.TranzitBankTransferValue + "]" );
 			}
 			if (level.script == "zm_buried")
 			{ 
-				level.bank_teller_transfer_trig sethintstring("Cost:" + level.BuriedTellerCost + " Points ", "[Teller Fee:" + level.BuriedTellerFee + "]" + " [Transfer Amount:" + level.BuriedBankTransferValue + "]" );
+				level.bank_teller_transfer_trig sethintstring("Hold ^3F^7 to add " + level.BuriedTellerCost, " [Cost:" + level.BuriedTellerFee + "]" + " [Transfer Amount:" + level.BuriedBankTransferValue + "]" );
 			}
 		}
     }
