@@ -36,7 +36,7 @@ init()
 	level.BankAccountMultiplier = 1; //Withdraw and Deposit Rate
 	level.DepositAmount = 1000;
 	level.WithdrawAmount = 1000;
-	level.WithdrawFee = 0;
+	level.WithdrawFee = 100;
 	level.Deposits = 0; //Don't Edit This
 	level.WithDraws = 0; //Don't Edit This
 }
