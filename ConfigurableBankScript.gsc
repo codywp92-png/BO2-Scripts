@@ -26,7 +26,7 @@ init()
 	level.AllowBankTeller = 1; //Global
 	level.AllowBankTellerTranzit = 1;
 	level.AllowBankTellerBuried = 1;
-	level.CustomBankTeller = 1;
+	level.CustomBankTeller = 1; //Global
 	level.CustomBankTellerTranzit = 1;
 	level.CustomBankTellerBuried = 1;
 	level.TranzitTellerCost = 1000;
