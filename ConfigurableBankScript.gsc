@@ -1,11 +1,14 @@
 #include common_scripts\utility;
 #include maps\mp\_utility;
 #include maps\mp\zombies\_zm_utility;
+#include scripts\json;
+#include scripts\strings;
 
 main()
 {
 	replaceFunc(maps\mp\zombies\_zm_banking::bank_teller_init,::new_bank_teller_init);
 	replaceFunc(maps\mp\zombies\_zm_banking::player_withdraw_fee,::new_player_withdraw_fee);
+	replaceFunc(maps\mp\zombies\_zm_banking::bank_deposit_box,::new_bank_deposit_box);
 	replaceFunc(maps\mp\zombies\_zm_banking::bank_teller_give_money,::new_bank_teller_give_money);
 	replaceFunc(maps\mp\zombies\_zm_banking::trigger_deposit_think,::new_trigger_deposit_think);
 	replaceFunc(maps\mp\zombies\_zm_banking::trigger_withdraw_think,::new_trigger_withdraw_think);
@@ -16,11 +19,11 @@ main()
 init()
 {
     level thread onplayerconnect();
-	level.AllowBank = 1;
+	level.AllowBank = 1; //Global
 	level.AllowBankTranzit = 1;
 	level.AllowBankBuried = 1;
 	level.AllowBankDieRise = 1;
-	level.AllowBankTeller = 1;
+	level.AllowBankTeller = 1; //Global
 	level.AllowBankTellerTranzit = 1;
 	level.AllowBankTellerBuried = 1;
 	level.CustomBankTeller = 1;
@@ -32,9 +35,12 @@ init()
 	level.BuriedTellerCost = 1000;
 	level.BuriedTellerFee = 100;
 	level.BuriedBankTransferValue = 1000;
-	level.DepositAmount = 1000;
-	level.WithdrawAmount = 1000;
-	level.WithdrawFee = 100;
+	level.BankAccountMultiplier = 10; //Withdraw and Deposit Rate
+	level.DepositAmount = 2000;
+	level.WithdrawAmount = 2000;
+	level.WithdrawFee = 0;
+	level.Deposits = 0; //Don't Edit This
+	level.WithDraws = 0; //Don't Edit This
 }
 
 onplayerconnect()
@@ -79,11 +85,11 @@ new_bank_teller_init()
 		{
 			if (level.script == "zm_transit")
 			{ 
-				level.bank_teller_transfer_trig sethintstring("Hold ^3F^7 to add " + level.TranzitTellerCost, " [Cost:" + level.TranzitTellerFee + "]" + " [Transfer Amount:" + level.TranzitBankTransferValue + "]" );
+				level.bank_teller_transfer_trig sethintstring("Hold ^3[{+activate}]^7 to add " + level.TranzitTellerCost, " [Cost:" + level.TranzitTellerFee + "]" + " [Transfer Amount:" + level.TranzitBankTransferValue + "]" );
 			}
 			if (level.script == "zm_buried")
 			{ 
-				level.bank_teller_transfer_trig sethintstring("Hold ^3F^7 to add " + level.BuriedTellerCost, " [Cost:" + level.BuriedTellerFee + "]" + " [Transfer Amount:" + level.BuriedBankTransferValue + "]" );
+				level.bank_teller_transfer_trig sethintstring("Hold ^3[{+activate}]^7 to add " + level.BuriedTellerCost, " [Cost:" + level.BuriedTellerFee + "]" + " [Transfer Amount:" + level.BuriedBankTransferValue + "]" );
 			}
 		}
     }
@@ -237,8 +243,10 @@ original_trigger_withdraw_update_prompt( player )
 		player show_balance();
 		return false;
 	}
-
-	self sethintstring( &"ZOMBIE_BANK_WITHDRAW_PROMPT", level.WithdrawAmount, level.WithdrawFee );
+	
+	level.BankBalance = int(player.account_value)*1000;
+	
+	self sethintstring("Hold ^3[{+activate}]^7 to withdraw ", level.WithdrawAmount," [Cost: " + level.WithdrawFee + "]" + " [Balance: " + level.BankBalance*level.BankAccountMultiplier + "]" );
 	return true;
 }
 
@@ -250,8 +258,10 @@ original_trigger_deposit_update_prompt( player )
 		self sethintstring( "" );
 		return false;
 	}
+	
+	level.BankBalance = int(player.account_value)*1000;
 
-	self sethintstring( &"ZOMBIE_BANK_DEPOSIT_PROMPT", level.DepositAmount );
+	self sethintstring( "Hold ^3[{+activate}]^7 to deposit"," " + level.bank_deposit_ddl_increment_amount + " [Balance: " + level.BankBalance*level.BankAccountMultiplier + "]" );
 	return true;
 }
 
@@ -324,11 +334,17 @@ new_trigger_deposit_think()
         if ( !is_player_valid( player ) )
             continue;
 
-        if ( player.score >= level.DepositAmount && player.account_value < level.bank_account_max )
+        if ( player.score >= level.bank_deposit_ddl_increment_amount && player.account_value < level.bank_account_max )
         {
-            player playsoundtoplayer( "zmb_vault_bank_deposit", player );
-            player.score -= level.DepositAmount;
-            player.account_value += level.DepositAmount;
+			level.Deposits += level.DepositAmount / 1000;
+            player playsoundtoplayer( "zmb_vault_bank_deposit", player );			
+            player.score -= level.bank_deposit_ddl_increment_amount;
+			if (level.Deposits >= level.BankAccountMultiplier)
+			{
+				level.Add = level.Deposits / level.BankAccountMultiplier;
+				player.account_value += level.add;
+				level.Deposits -= level.BankAccountMultiplier*level.Add;
+			}
             player maps\mp\zombies\_zm_stats::set_map_stat( "depositBox", player.account_value, level.banking_map );
 
             if ( isdefined( level.custom_bank_deposit_vo ) )
@@ -336,6 +352,9 @@ new_trigger_deposit_think()
 
             if ( player.account_value >= level.bank_account_max )
                 self sethintstring( "" );
+			
+			if ( level.ShowBalance == 1)
+				player iprintln(player.account_value);
         }
         else
             player thread do_player_general_vox( "general", "exert_sigh", 10, 50 );
@@ -355,12 +374,18 @@ new_trigger_withdraw_think()
         if ( !is_player_valid( player ) )
             continue;
 
-        if ( player.account_value >= level.bank_account_increment )
+        if ( player.account_value >= level.bank_account_increment && player.score+level.WithdrawAmount < 1000000 )
         {
+			level.WithDraws += level.WithdrawAmount / 1000;
             player playsoundtoplayer( "zmb_vault_bank_withdraw", player );
             player.score += level.WithdrawAmount;
             level notify( "bank_withdrawal" );
-            player.account_value -= level.WithdrawAmount;
+			if (level.WithDraws >= level.BankAccountMultiplier)
+			{
+				level.Minus = level.WithDraws / level.BankAccountMultiplier;
+				player.account_value -= level.Minus;
+				level.WithDraws -= level.BankAccountMultiplier*level.Minus;
+			}
             player maps\mp\zombies\_zm_stats::set_map_stat( "depositBox", player.account_value, level.banking_map );
 
             if ( isdefined( level.custom_bank_withdrawl_vo ) )
@@ -370,8 +395,11 @@ new_trigger_withdraw_think()
 
             player thread player_withdraw_fee();
 
-            if ( player.account_value < level.WithdrawAmount )
+            if ( player.account_value < level.bank_account_increment )
                 self sethintstring( "" );
+			
+			if ( level.ShowBalance == 1)
+				player iprintln(player.account_value);
         }
         else
             player thread do_player_general_vox( "general", "exert_sigh", 10, 50 );
@@ -385,4 +413,16 @@ new_player_withdraw_fee()
     self endon( "disconnect" );
     wait_network_frame();
     self.score -= level.WithdrawFee;
+}
+
+new_bank_deposit_box()
+{
+    level.bank_deposit_max_amount = 250000;
+    level.bank_deposit_ddl_increment_amount = level.DepositAmount;
+    level.bank_account_max = level.bank_deposit_max_amount / 1000;
+    level.bank_account_increment = int( level.bank_deposit_ddl_increment_amount / level.bank_deposit_ddl_increment_amount );
+    deposit_triggers = getstructarray( "bank_deposit", "targetname" );
+    array_thread( deposit_triggers, ::bank_deposit_unitrigger );
+    withdraw_triggers = getstructarray( "bank_withdraw", "targetname" );
+    array_thread( withdraw_triggers, ::bank_withdraw_unitrigger );
 }
