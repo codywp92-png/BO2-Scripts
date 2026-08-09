@@ -35,9 +35,9 @@ init()
 	level.BuriedTellerCost = 1000;
 	level.BuriedTellerFee = 100;
 	level.BuriedBankTransferValue = 1000;
-	level.BankAccountMultiplier = 10; //Withdraw and Deposit Rate
-	level.DepositAmount = 2000;
-	level.WithdrawAmount = 2000;
+	level.BankAccountMultiplier = 1; //Withdraw and Deposit Rate
+	level.DepositAmount = 1000;
+	level.WithdrawAmount = 1000;
 	level.WithdrawFee = 0;
 	level.Deposits = 0; //Don't Edit This
 	level.WithDraws = 0; //Don't Edit This
@@ -352,9 +352,6 @@ new_trigger_deposit_think()
 
             if ( player.account_value >= level.bank_account_max )
                 self sethintstring( "" );
-			
-			if ( level.ShowBalance == 1)
-				player iprintln(player.account_value);
         }
         else
             player thread do_player_general_vox( "general", "exert_sigh", 10, 50 );
@@ -397,9 +394,6 @@ new_trigger_withdraw_think()
 
             if ( player.account_value < level.bank_account_increment )
                 self sethintstring( "" );
-			
-			if ( level.ShowBalance == 1)
-				player iprintln(player.account_value);
         }
         else
             player thread do_player_general_vox( "general", "exert_sigh", 10, 50 );
