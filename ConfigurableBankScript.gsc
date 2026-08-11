@@ -34,11 +34,9 @@ init()
 	level.BuriedTellerFee = 100;
 	level.BuriedBankTransferValue = 1000;
 	level.BankAccountMultiplier = 1; //Withdraw and Deposit Rate
-	level.DepositAmount = 1000;
-	level.WithdrawAmount = 1000;
+	level.DepositAmount = 1000; //Min 1000 or script breaks
+	level.WithdrawAmount = 1000; //Min 1000 or script breaks
 	level.WithdrawFee = 100;
-	level.Deposits = 0; //Don't Edit This
-	level.WithDraws = 0; //Don't Edit This
 }
 
 onplayerconnect()
@@ -242,9 +240,9 @@ original_trigger_withdraw_update_prompt( player )
 		return false;
 	}
 	
-	level.BankBalance = int(player.account_value)*1000;
+	level.BankBalance = player.account_value/level.bank_account_increment;
 	
-	self sethintstring("Hold ^3[{+activate}]^7 to withdraw ", level.WithdrawAmount," [Cost: " + level.WithdrawFee + "]" + " [Balance: " + level.BankBalance*level.BankAccountMultiplier + "]" );
+	self sethintstring("Hold ^3[{+activate}]^7 to withdraw ", level.WithdrawAmount," [Cost: " + level.WithdrawFee + "]" + " [Balance: " + int(level.BankBalance)*1000 + "]" );
 	return true;
 }
 
@@ -257,9 +255,9 @@ original_trigger_deposit_update_prompt( player )
 		return false;
 	}
 	
-	level.BankBalance = int(player.account_value)*1000;
+	level.BankBalance = player.account_value/level.bank_account_increment;
 
-	self sethintstring( "Hold ^3[{+activate}]^7 to deposit"," " + level.bank_deposit_ddl_increment_amount + " [Balance: " + level.BankBalance*level.BankAccountMultiplier + "]" );
+	self sethintstring( "Hold ^3[{+activate}]^7 to deposit"," " + level.bank_deposit_ddl_increment_amount + " [Balance: " + int(level.BankBalance)*1000 + "]" );
 	return true;
 }
 
@@ -334,15 +332,10 @@ new_trigger_deposit_think()
 
         if ( player.score >= level.bank_deposit_ddl_increment_amount && player.account_value < level.bank_account_max )
         {
-			level.Deposits += level.DepositAmount / 1000;
+			level.Multiplier = level.DepositAmount / 1000;
             player playsoundtoplayer( "zmb_vault_bank_deposit", player );			
             player.score -= level.bank_deposit_ddl_increment_amount;
-			if (level.Deposits >= level.BankAccountMultiplier)
-			{
-				level.Add = level.Deposits / level.BankAccountMultiplier;
-				player.account_value += level.add;
-				level.Deposits -= level.BankAccountMultiplier*level.Add;
-			}
+			player.account_value += level.bank_account_increment*level.Multiplier;
             player maps\mp\zombies\_zm_stats::set_map_stat( "depositBox", player.account_value, level.banking_map );
 
             if ( isdefined( level.custom_bank_deposit_vo ) )
@@ -371,16 +364,11 @@ new_trigger_withdraw_think()
 
         if ( player.account_value >= level.bank_account_increment && player.score+level.WithdrawAmount < 1000000 )
         {
-			level.WithDraws += level.WithdrawAmount / 1000;
+			level.Multiplier = level.WithdrawAmount / 1000;
             player playsoundtoplayer( "zmb_vault_bank_withdraw", player );
             player.score += level.WithdrawAmount;
             level notify( "bank_withdrawal" );
-			if (level.WithDraws >= level.BankAccountMultiplier)
-			{
-				level.Minus = level.WithDraws / level.BankAccountMultiplier;
-				player.account_value -= level.Minus;
-				level.WithDraws -= level.BankAccountMultiplier*level.Minus;
-			}
+			player.account_value -= level.bank_account_increment * level.WithdrawAmount / 1000;
             player maps\mp\zombies\_zm_stats::set_map_stat( "depositBox", player.account_value, level.banking_map );
 
             if ( isdefined( level.custom_bank_withdrawl_vo ) )
@@ -413,8 +401,23 @@ new_bank_deposit_box()
     level.bank_deposit_ddl_increment_amount = level.DepositAmount;
     level.bank_account_max = level.bank_deposit_max_amount / 1000;
     level.bank_account_increment = int( level.bank_deposit_ddl_increment_amount / level.bank_deposit_ddl_increment_amount );
+	level.bank_account_increment = format_decimal(level.bank_account_increment / level.BankAccountMultiplier);
     deposit_triggers = getstructarray( "bank_deposit", "targetname" );
     array_thread( deposit_triggers, ::bank_deposit_unitrigger );
     withdraw_triggers = getstructarray( "bank_withdraw", "targetname" );
     array_thread( withdraw_triggers, ::bank_withdraw_unitrigger );
+}
+
+format_decimal(d)
+{
+    whole = int(d);
+	
+    decimal = int(((d - whole) * 1000) + 0.5); 
+    
+    if (decimal < 10)
+        decimal = "00" + decimal;
+    else if (decimal < 100)
+        decimal = "0" + decimal;
+        
+    return float(whole + "." + decimal);
 }
