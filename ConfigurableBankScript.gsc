@@ -33,7 +33,7 @@ init()
 	level.BuriedTellerCost = 1000;
 	level.BuriedTellerFee = 100;
 	level.BuriedBankTransferValue = 1000;
-	level.BankAccountMultiplier = 1; //Withdraw and Deposit Rate
+	level.BankAccountMultiplier = 1; //Bank Multiplier
 	level.DepositAmount = 1000; //Min 1000 or script breaks
 	level.WithdrawAmount = 1000; //Min 1000 or script breaks
 	level.WithdrawFee = 100;
